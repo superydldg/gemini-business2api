@@ -152,11 +152,15 @@ class RegisterService(BaseTaskService[RegisterTask]):
             if result.get("success"):
                 task.success_count += 1
                 email = result.get('email', '未知')
+                self._append_log(task, "info", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                 self._append_log(task, "info", f"✅ 注册成功: {email}")
+                self._append_log(task, "info", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             else:
                 task.fail_count += 1
                 error = result.get('error', '未知错误')
+                self._append_log(task, "error", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                 self._append_log(task, "error", f"❌ 注册失败: {error}")
+                self._append_log(task, "error", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
             # 账号之间等待 10 秒，避免资源争抢和风控
             if idx < task.count - 1 and not task.cancel_requested:

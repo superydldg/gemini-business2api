@@ -1388,6 +1388,7 @@ async def admin_get_accounts(request: Request):
             "is_available": account_manager.is_available,
             "failure_count": account_manager.failure_count,
             "disabled": config.disabled,
+            "disabled_reason": getattr(account_manager, 'disabled_reason', None) or getattr(config, 'disabled_reason', None),
             "cooldown_seconds": cooldown_seconds,
             "cooldown_reason": cooldown_reason,
             "conversation_count": account_manager.conversation_count,

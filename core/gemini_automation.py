@@ -333,16 +333,15 @@ class GeminiAutomation:
         from datetime import datetime
         task_start_time = datetime.now()
 
-        # Step 1: 导航到首页，提取动态 XSRF Token
+        # Step 1: 导航到登录页面
         self._log("info", f"🌐 打开登录页面: {email}")
-
         page.get(AUTH_HOME_URL, timeout=self.timeout)
         time.sleep(random.uniform(2, 4))
 
         # 从页面动态提取 XSRF token（避免硬编码被 Google 标黑）
         xsrf_token = self._extract_xsrf_token(page)
 
-        # 设置 XSRF Cookie（不再设置假的 reCAPTCHA cookie，让浏览器自己处理）
+        # 设置 XSRF Cookie
         try:
             self._log("info", "🍪 设置 XSRF Cookie...")
             page.set.cookies({
@@ -355,8 +354,12 @@ class GeminiAutomation:
         except Exception as e:
             self._log("warning", f"⚠️ Cookie 设置失败: {e}")
 
+        # Step 1.5: 通过 URL 方式提交邮箱（稳定，不触发风控）
         login_hint = quote(email, safe="")
         login_url = f"https://auth.business.gemini.google/login/email?continueUrl=https%3A%2F%2Fbusiness.gemini.google%2F&loginHint={login_hint}&xsrfToken={xsrf_token}"
+        self._log("info", "📧 使用 URL 方式提交邮箱...")
+        page.get(login_url, timeout=self.timeout)
+        time.sleep(random.uniform(3, 5))
 
         # 启动网络监听（只监听 batchexecute，减少干扰）
         try:
@@ -369,20 +372,29 @@ class GeminiAutomation:
         except Exception:
             pass
 
-        page.get(login_url, timeout=self.timeout)
-        time.sleep(random.uniform(3, 5))
-
         # 模拟真实用户行为：页面加载后随机滚动
         self._random_scroll(page)
 
         # Step 2: 检查当前页面状态
         current_url = page.url
         self._log("info", f"📍 当前 URL: {current_url}")
+
+        # 检测 signin-error 页面（极端情况，一般 URL 方式不会触发）
+        if "signin-error" in current_url:
+            self._log("error", "❌ 进入 signin-error 页面，可能是代理或网络问题")
+            self._save_screenshot(page, "signin_error")
+            return {"success": False, "error": "signin-error: token rejected by Google, try changing proxy"}
+
         has_business_params = "business.gemini.google" in current_url and "csesidx=" in current_url and "/cid/" in current_url
 
         if has_business_params:
             self._log("info", "✅ 已登录，提取配置")
             return self._extract_config(page, email)
+
+        # 检测 403 Access Restricted（刷新/登录时账户可能已被封禁）
+        access_error = self._check_access_restricted(page, email)
+        if access_error:
+            return access_error
 
         # Step 3: 点击发送验证码按钮（最多3轮，指数退避间隔）
         self._log("info", "📧 发送验证码...")
@@ -459,9 +471,13 @@ class GeminiAutomation:
                 except Exception:
                     pass
 
-        # [注册专用] 验证码提交后立刻轮询姓名输入框（参考代码方式，不等待12秒）
+        # [注册专用] 验证码提交后先等几秒让页面跳转，再检查 403
         if is_new_account:
-            self._log("info", "📝 [注册] 验证码已提交，立即等待姓名输入页面...")
+            time.sleep(3)
+            access_error = self._check_access_restricted(page, email)
+            if access_error:
+                return access_error
+            self._log("info", "📝 [注册] 验证码已提交，等待姓名输入页面...")
             if self._handle_username_setup(page, is_new_account=True):
                 self._log("info", "✅ 姓名填写完成，等待工作台 URL...")
                 if self._wait_for_business_params(page, timeout=45):
@@ -487,6 +503,11 @@ class GeminiAutomation:
         # Step 8: 处理协议页面（如果有）
         self._handle_agreement_page(page)
 
+        # Step 8.5: 检测 403 Access Restricted 页面
+        access_error = self._check_access_restricted(page, email)
+        if access_error:
+            return access_error
+
         # Step 9: 检查是否已经在正确的页面
         current_url = page.url
         has_business_params = "business.gemini.google" in current_url and "csesidx=" in current_url and "/cid/" in current_url
@@ -504,7 +525,12 @@ class GeminiAutomation:
             if self._handle_username_setup(page):
                 time.sleep(random.uniform(4, 7))
 
-        # Step 12: 等待 URL 参数生成（csesidx 和 cid）
+        # Step 12: 再次检测 403（导航后可能出现）
+        access_error = self._check_access_restricted(page, email)
+        if access_error:
+            return access_error
+
+        # Step 13: 等待 URL 参数生成（csesidx 和 cid）
         if not self._wait_for_business_params(page):
             page.refresh()
             time.sleep(random.uniform(4, 7))
@@ -571,6 +597,12 @@ class GeminiAutomation:
                     return False
         except Exception as e:
             self._log("warning", f"⚠️ 搜索按钮异常: {e}")
+
+        # 检查是否在 signin-error 页面（不应该继续尝试发送）
+        if "signin-error" in (page.url or ""):
+            self._stop_listen(page)
+            self._log("error", "❌ 在 signin-error 页面，无法发送验证码")
+            return False
 
         # 检查是否已经在验证码输入页面
         code_input = page.ele("css:input[jsname='ovqh0b']", timeout=2) or page.ele("css:input[name='pinInput']", timeout=1)
@@ -857,6 +889,48 @@ class GeminiAutomation:
 
         return False
 
+    def _check_access_restricted(self, page, email: str = "") -> dict | None:
+        """检测 403 Access Restricted 页面，返回错误 dict 或 None"""
+        domain = email.split("@")[1] if "@" in email else "unknown"
+        error_msg = f"403 域名封禁 ({domain})"
+
+        # 方法1: 搜索 h1 标签
+        try:
+            h1 = page.ele("tag:h1", timeout=2)
+            h1_text = h1.text if h1 else ""
+            if h1_text and "Access Restricted" in h1_text:
+                self._log("error", "⛔ 403 Access Restricted: email banned by Google")
+                self._log("error", f"⛔ 403 访问受限，域名 {domain} 可能已被 Google 封禁")
+                self._save_screenshot(page, "access_restricted_403")
+                return {"success": False, "error": error_msg}
+        except Exception:
+            pass
+
+        # 方法2: body 文本
+        try:
+            body = page.ele("tag:body", timeout=2)
+            body_text = (body.text or "")[:500] if body else ""
+            if "Access Restricted" in body_text:
+                self._log("error", "⛔ 403 Access Restricted: email banned by Google")
+                self._log("error", f"⛔ 403 访问受限，域名 {domain} 可能已被 Google 封禁")
+                self._save_screenshot(page, "access_restricted_403")
+                return {"success": False, "error": error_msg}
+        except Exception:
+            pass
+
+        # 方法3: page.html 源码
+        try:
+            html = (page.html or "")[:2000]
+            if "Access Restricted" in html:
+                self._log("error", "⛔ 403 Access Restricted: email banned by Google")
+                self._log("error", f"⛔ 403 访问受限，域名 {domain} 可能已被 Google 封禁")
+                self._save_screenshot(page, "access_restricted_403")
+                return {"success": False, "error": error_msg}
+        except Exception:
+            pass
+
+        return None
+
     def _handle_agreement_page(self, page) -> None:
         """处理协议页面"""
         if "/admin/create" in page.url:
@@ -905,7 +979,7 @@ class GeminiAutomation:
         # 与参考代码对齐：页面加载慢时不会过早放弃
         username_input = None
         self._log("info", "⏳ 等待用户名输入框出现（最多30秒）...")
-        for _ in range(30):
+        for i in range(30):
             for selector in selectors:
                 try:
                     el = page.ele(selector, timeout=1)

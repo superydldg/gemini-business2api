@@ -165,6 +165,25 @@ class LoginService(BaseTaskService[LoginTask]):
                 self._append_log(task, "error", f"❌ 失败原因: {error}")
                 self._append_log(task, "error", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
+                # 403 自动禁用账户
+                if "403" in error:
+                    try:
+                        accounts = load_accounts_from_source()
+                        for acc in accounts:
+                            if acc.get("id") == account_id:
+                                acc["disabled"] = True
+                                acc["disabled_reason"] = "403 Access Restricted"
+                                break
+                        self._apply_accounts_update(accounts)
+                        # 同步到内存中的 account manager
+                        if account_id in self.multi_account_mgr.accounts:
+                            mgr = self.multi_account_mgr.accounts[account_id]
+                            mgr.config.disabled = True
+                            mgr.disabled_reason = "403 Access Restricted"
+                        self._append_log(task, "error", f"⛔ 已自动禁用账户: {account_id}")
+                    except Exception as e:
+                        self._append_log(task, "warning", f"⚠️ 自动禁用失败: {e}")
+
             # 账号之间等待 10 秒，避免资源争抢和风控
             if idx < len(task.account_ids) and not task.cancel_requested:
                 self._append_log(task, "info", "⏳ 等待 10 秒后处理下一个账号...")
