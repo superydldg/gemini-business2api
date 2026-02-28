@@ -29,6 +29,7 @@ export interface AdminAccount {
   error_count: number
   failure_count: number
   disabled: boolean
+  disabled_reason: string | null
   cooldown_seconds: number
   cooldown_reason: string | null
   conversation_count: number

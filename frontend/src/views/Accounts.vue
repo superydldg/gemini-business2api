@@ -1323,6 +1323,7 @@ const statusOptions = [
   { label: '即将过期', value: '即将过期' },
   { label: '已过期', value: '已过期' },
   { label: '手动禁用', value: '手动禁用' },
+  { label: '403 禁用', value: '403 禁用' },
   { label: '429限流', value: '429限流' },
 ]
 
@@ -2348,6 +2349,9 @@ const statusLabel = (account: AdminAccount) => {
     return '429限流'
   }
   if (account.disabled) {
+    if (account.disabled_reason?.includes('403')) {
+      return '403 禁用'
+    }
     return '手动禁用'
   }
   if (account.status === '已过期') {
@@ -2372,6 +2376,9 @@ const statusClass = (account: AdminAccount) => {
   }
   if (status === '手动禁用') {
     return 'bg-muted text-muted-foreground'
+  }
+  if (status === '403 禁用') {
+    return 'bg-rose-600 text-white'
   }
   return 'bg-emerald-500 text-white'
 }
@@ -2405,7 +2412,7 @@ const trialBadgeClass = (days: number | null | undefined) => {
 
 const rowClass = (account: AdminAccount) => {
   const status = statusLabel(account)
-  if (status === '手动禁用' || status === '已过期') {
+  if (status === '手动禁用' || status === '已过期' || status === '403 禁用') {
     return 'bg-muted/70'
   }
   return ''
