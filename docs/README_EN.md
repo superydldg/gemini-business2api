@@ -41,6 +41,58 @@ Registration tools, experimental refresh flows, and older script-first deploymen
 
 ---
 
+## Functional Architecture Flow
+
+```mermaid
+flowchart TB
+  User["Admin user"] --> Frontend["Admin panel frontend"]
+  Client["OpenAI-compatible client"] --> Gateway["2API API gateway"]
+
+  subgraph Features["Admin feature modules"]
+    Dashboard["Overview center"]
+    Accounts["Account management"]
+    Settings["System settings"]
+    Monitor["Monitoring"]
+    Logs["Runtime logs"]
+    Gallery["Image gallery"]
+    Docs["Docs / tutorials"]
+  end
+
+  Frontend --> Dashboard
+  Frontend --> Accounts
+  Frontend --> Settings
+  Frontend --> Monitor
+  Frontend --> Logs
+  Frontend --> Gallery
+  Frontend --> Docs
+
+  Dashboard --> AdminAPI["Admin management APIs"]
+  Accounts --> AdminAPI
+  Settings --> AdminAPI
+  Monitor --> AdminAPI
+  Logs --> AdminAPI
+  Gallery --> AdminAPI
+  Docs --> AdminAPI
+
+  Gateway --> Runtime["Model routing / chat / image / video APIs"]
+  AdminAPI --> Domain["Account pool / config / scheduling / monitoring / logs"]
+  Runtime --> Domain
+
+  Domain --> DB["SQLite / PostgreSQL"]
+  Domain --> Data["data directory"]
+  Domain -. "optional integration" .-> Refresh["refresh-worker"]
+```
+
+This reflects the current mainline design:
+
+- **Two entry points**: admin panel users and OpenAI-compatible clients
+- **Admin pages** go through a unified management API layer
+- **The 2API gateway path** handles chat, model, image, and video compatibility
+- **The core domain layer** centralizes account pool, configuration, scheduling, monitoring, and logs
+- **refresh-worker** is an optional external refresh executor and is no longer tightly coupled to the main service
+
+---
+
 ## Deployment Layout
 
 ```text

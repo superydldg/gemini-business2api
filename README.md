@@ -41,6 +41,58 @@ Gemini Business2API 是一个把 [Gemini Business](https://business.google.com) 
 
 ---
 
+## 功能架构流程图
+
+```mermaid
+flowchart TB
+  User["管理员"] --> Frontend["管理后台前端"]
+  Client["OpenAI 兼容客户端"] --> Gateway["2API API 网关"]
+
+  subgraph Features["后台功能模块"]
+    Dashboard["概览中心"]
+    Accounts["账号管理"]
+    Settings["系统设置"]
+    Monitor["监控状态"]
+    Logs["运行日志"]
+    Gallery["图片画廊"]
+    Docs["文档教程"]
+  end
+
+  Frontend --> Dashboard
+  Frontend --> Accounts
+  Frontend --> Settings
+  Frontend --> Monitor
+  Frontend --> Logs
+  Frontend --> Gallery
+  Frontend --> Docs
+
+  Dashboard --> AdminAPI["后台管理接口"]
+  Accounts --> AdminAPI
+  Settings --> AdminAPI
+  Monitor --> AdminAPI
+  Logs --> AdminAPI
+  Gallery --> AdminAPI
+  Docs --> AdminAPI
+
+  Gateway --> Runtime["模型路由 / 对话 / 图片 / 视频接口"]
+  AdminAPI --> Domain["账号池 / 配置中心 / 调度 / 监控 / 日志"]
+  Runtime --> Domain
+
+  Domain --> DB["SQLite / PostgreSQL"]
+  Domain --> Data["data 目录"]
+  Domain -. "可选接入" .-> Refresh["refresh-worker"]
+```
+
+这个图对应当前主线设计：
+
+- **前台入口**分为两类：管理后台用户、OpenAI 兼容客户端
+- **后台页面功能**统一走后台管理接口
+- **2API 网关链路**负责对话、模型、图片、视频等 OpenAI 兼容能力
+- **核心域层**统一处理账号池、配置、调度、监控、日志
+- **refresh-worker** 是可选外部刷新执行器，不再和主服务强耦合
+
+---
+
 ## 部署架构
 
 ```text

@@ -501,15 +501,6 @@
               </div>
             </div>
 
-            <div class="ui-card">
-              <CardSectionHeader title="说明" />
-              <div class="mt-4 space-y-3 text-sm text-muted-foreground">
-                <p>设置页已经恢复成旧版交互思路：邮箱提供商下拉选择，按服务商分别填写。</p>
-                <p>保存时以前端这份统一 settings 契约为准，刷新相关配置统一收口到 `refresh_settings`。</p>
-                <p>后端会在运行时映射到 `basic / retry` 供主服务读取，但数据库只保存 canonical 配置，避免旧值反向覆盖。</p>
-                <p>没有重新加回当前后端未支持的 `browser_engine` 和 `samplemail` 专属字段，避免再次出现保存错乱。</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
