@@ -28,6 +28,94 @@ class AccountRouteDeps:
     update_accounts_config: Callable[..., Any]
 
 
+def _build_account_state(
+    account_manager: Any,
+    status: str,
+    remaining_hours: Any,
+    cooldown_seconds: int,
+    cooldown_reason: str | None,
+    quota_status: dict[str, Any],
+) -> dict[str, Any]:
+    account_config = account_manager.config
+    disabled_reason = (
+        getattr(account_manager, "disabled_reason", None)
+        or getattr(account_config, "disabled_reason", None)
+    )
+
+    state = {
+        "code": "active",
+        "label": "Active",
+        "severity": "success",
+        "reason": None,
+        "cooldown_seconds": cooldown_seconds,
+        "can_enable": False,
+        "can_disable": True,
+        "can_delete": True,
+    }
+
+    if account_config.disabled:
+        is_access_restricted = bool(disabled_reason and "403" in disabled_reason)
+        state.update({
+            "code": "access_restricted" if is_access_restricted else "manual_disabled",
+            "label": "Access restricted" if is_access_restricted else "Manual disabled",
+            "severity": "danger" if is_access_restricted else "muted",
+            "reason": disabled_reason,
+            "can_enable": True,
+            "can_disable": False,
+        })
+        return state
+
+    if account_config.is_expired():
+        state.update({
+            "code": "expired",
+            "label": "Expired",
+            "severity": "danger",
+            "reason": status,
+            "can_disable": False,
+        })
+        return state
+
+    if cooldown_seconds > 0:
+        state.update({
+            "code": "rate_limited",
+            "label": "Rate limited",
+            "severity": "warning",
+            "reason": cooldown_reason,
+            "can_enable": True,
+        })
+        return state
+
+    if quota_status.get("limited_count", 0) > 0:
+        state.update({
+            "code": "quota_limited",
+            "label": "Quota limited",
+            "severity": "warning",
+            "reason": "quota_limited",
+        })
+        return state
+
+    if remaining_hours is not None and 0 < remaining_hours < 3:
+        state.update({
+            "code": "expiring_soon",
+            "label": "Expiring soon",
+            "severity": "warning",
+            "reason": status,
+        })
+        return state
+
+    if not account_manager.is_available:
+        state.update({
+            "code": "unavailable",
+            "label": "Unavailable",
+            "severity": "warning",
+            "reason": status,
+            "can_enable": True,
+        })
+        return state
+
+    return state
+
+
 def register_account_routes(app: FastAPI, deps: AccountRouteDeps) -> None:
     @app.get("/admin/accounts")
     @deps.require_login()
@@ -41,9 +129,18 @@ def register_account_routes(app: FastAPI, deps: AccountRouteDeps) -> None:
             status, _, remaining_display = deps.format_account_expiration(remaining_hours)
             cooldown_seconds, cooldown_reason = account_manager.get_cooldown_info()
             quota_status = account_manager.get_quota_status()
+            account_state = _build_account_state(
+                account_manager,
+                status,
+                remaining_hours,
+                cooldown_seconds,
+                cooldown_reason,
+                quota_status,
+            )
 
             accounts_info.append({
                 "id": account_config.account_id,
+                "state": account_state,
                 "status": status,
                 "expires_at": account_config.expires_at or "未设置",
                 "remaining_hours": remaining_hours,

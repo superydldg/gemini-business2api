@@ -68,13 +68,11 @@ def _build_demo_accounts() -> list[dict]:
             return None
         return (now + timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
 
-    providers = ["duckmail", "moemail", "freemail", "gptmail", "cfmail", "microsoft"]
     clusters = ["alpha", "beta", "gamma", "delta", "omega", "nova"]
     rows: list[dict] = []
     template_hours: list[int | None] = [240, 168, 96, 72, 48, 24, 12, 6, 3, -4, -12, None]
 
     for idx, hours in enumerate(template_hours, 1):
-        provider = providers[(idx - 1) % len(providers)]
         cluster = clusters[(idx - 1) % len(clusters)]
         account_id = f"{cluster}-{200 + idx:03d}"
         is_disabled = idx in {10, 11}
@@ -87,16 +85,8 @@ def _build_demo_accounts() -> list[dict]:
             "expires_at": exp(hours),
             "disabled": is_disabled,
             "disabled_reason": "manual_hold" if is_disabled else None,
-            "mail_provider": provider,
-            "mail_address": f"{account_id}@mailbox.local",
-            "mail_password": _rand_token("mail-", 10),
-            "mail_verify_ssl": True,
             "trial_end": (now + timedelta(days=max(0, 21 - idx))).strftime("%Y-%m-%d"),
         }
-        if provider == "microsoft":
-            entry["mail_client_id"] = "demo-client-id"
-            entry["mail_refresh_token"] = _rand_token("demo-refresh-", 18)
-            entry["mail_tenant"] = "consumers"
         rows.append(entry)
 
     return rows

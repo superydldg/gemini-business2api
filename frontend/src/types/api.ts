@@ -19,8 +19,33 @@ export interface AccountQuotaStatus {
   is_expired: boolean
 }
 
+export type AccountStateCode =
+  | 'active'
+  | 'manual_disabled'
+  | 'access_restricted'
+  | 'expired'
+  | 'expiring_soon'
+  | 'rate_limited'
+  | 'quota_limited'
+  | 'unavailable'
+  | 'unknown'
+
+export type AccountStateSeverity = 'success' | 'warning' | 'danger' | 'muted'
+
+export interface AccountState {
+  code: AccountStateCode
+  label: string
+  severity: AccountStateSeverity
+  reason: string | null
+  cooldown_seconds: number
+  can_enable: boolean
+  can_disable: boolean
+  can_delete: boolean
+}
+
 export interface AdminAccount {
   id: string
+  state?: AccountState
   status: string
   expires_at: string
   remaining_hours: number | null

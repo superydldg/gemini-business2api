@@ -49,16 +49,4 @@ export const accountsApi = {
       '/admin/accounts/bulk-delete',
       accountIds
     ),
-
-  // 暂停自动刷新
-  pauseAutoRefresh: () =>
-    apiClient.post<never, { status: string; message: string }>('/admin/auto-refresh/pause'),
-
-  // 恢复自动刷新
-  resumeAutoRefresh: () =>
-    apiClient.post<never, { status: string; message: string }>('/admin/auto-refresh/resume'),
-
-  // 获取自动刷新状态
-  getAutoRefreshStatus: () =>
-    apiClient.get<never, { paused: boolean; status: string }>('/admin/auto-refresh/status'),
 }

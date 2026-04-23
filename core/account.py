@@ -50,18 +50,6 @@ class AccountConfig:
     config_id: str
     expires_at: Optional[str] = None  # 账户过期时间 (格式: "2025-12-23 10:59:21")
     disabled: bool = False  # 手动禁用状态
-    mail_provider: Optional[str] = None
-    mail_address: Optional[str] = None
-    mail_password: Optional[str] = None
-    mail_client_id: Optional[str] = None
-    mail_refresh_token: Optional[str] = None
-    mail_tenant: Optional[str] = None
-    # 邮箱自定义配置字段（用于账户级别的邮箱服务配置）
-    mail_base_url: Optional[str] = None
-    mail_jwt_token: Optional[str] = None
-    mail_verify_ssl: Optional[bool] = None
-    mail_domain: Optional[str] = None
-    mail_api_key: Optional[str] = None
     trial_end: Optional[str] = None  # 试用到期日 (格式: "2026-03-25"，独立于cookie过期)
 
     def get_remaining_hours(self) -> Optional[float]:
@@ -803,12 +791,6 @@ def load_multi_account_config(
             config_id=acc["config_id"],
             expires_at=acc.get("expires_at"),
             disabled=acc.get("disabled", False),  # 读取手动禁用状态，默认为False
-            mail_provider=acc.get("mail_provider"),
-            mail_address=acc.get("mail_address"),
-            mail_password=acc.get("mail_password") or acc.get("email_password"),
-            mail_client_id=acc.get("mail_client_id"),
-            mail_refresh_token=acc.get("mail_refresh_token"),
-            mail_tenant=acc.get("mail_tenant"),
             trial_end=acc.get("trial_end"),
         )
 
