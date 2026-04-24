@@ -7,10 +7,13 @@
   <strong>简体中文</strong> | <a href="docs/README_EN.md">English</a>
 </p>
 <p align="center"><img src="https://img.shields.io/badge/License-CNC--1.0-red.svg" /> <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" /> <img src="https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white" /> <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" /> <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" /> <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" /></p>
+<p align="center"><strong>当前稳定版本：v0.3.0</strong> | <a href="https://github.com/yukkcat/gemini-business2api/releases/tag/v0.3.0">发布说明</a> | <a href="https://github.com/yukkcat/gemini-business2api/releases">全部版本</a></p>
 
-<p align="center">聚焦 2API 主服务、管理后台与可选 refresh-worker。</p>
-
-<p align="center">当前稳定版本：<strong>v0.3.0</strong> | <a href="https://github.com/yukkcat/gemini-business2api/releases/tag/v0.3.0">发布说明</a> | <a href="https://github.com/yukkcat/gemini-business2api/releases">全部版本</a></p>
+> [!IMPORTANT]
+> 自 **v0.3.0** 起，主线仓库已彻底归为 **2API 主线**：
+> 只保留 **2API 主服务**、**管理后台**、**可选 refresh-worker**。
+>
+> 已移除或迁出：**注册机**、**注册流程**、**主服务内嵌刷新执行器**、**依赖浏览器显示环境的旧链路**。如需刷新能力，请通过独立的 `refresh-worker` 分支 / 镜像按需接入。
 
 ---
 
@@ -18,37 +21,47 @@
 
 Gemini Business2API 是一个把 [Gemini Business](https://business.google.com) 能力转换为 **OpenAI 兼容接口** 的网关服务，内置后台管理面板，适合统一管理账号池、系统设置、图片 / 视频能力与运行状态。
 
----
-
-## 社区交流
-
-点击链接加入群聊【business2api 交流群】：
-
-- [https://qm.qq.com/q/yegwCqJisS](https://qm.qq.com/q/yegwCqJisS)
+当前主线目标很明确：**稳定提供 2API 主服务**，把历史上的注册、刷新、实验性链路从主仓库主流程中彻底拆出去。
 
 ---
 
 ## 核心能力
 
-- ✅ OpenAI API 兼容：可直接对接常见 OpenAI 客户端与中间层
-- ✅ 多账号调度：支持轮询、可用性切换与批量管理
-- ✅ 账号管理后台：导入 / 导出 / 编辑 / 批量操作 / 状态筛选
-- ✅ 多模态能力：支持文本、文件、图片、视频相关能力
-- ✅ 图片生成 / 图生图：支持 Base64 或 URL 返回
-- ✅ 视频生成：支持统一配置与输出格式控制
-- ✅ 系统设置集中管理：代理、邮箱、刷新、输出格式等统一收口
-- ✅ 仪表盘 / 监控 / 日志：便于观察服务状态与账号池情况
-- ✅ SQLite / PostgreSQL：支持本地持久化与多实例共享数据
-- ✅ 可选 refresh-worker：通过 Docker Compose profile 独立启用
+- OpenAI 兼容接口，可直接对接常见 OpenAI SDK / 中间层
+- 多账号调度，支持轮询、可用性切换、批量管理
+- 管理后台，支持账号导入 / 导出 / 编辑 / 批量操作 / 状态筛选
+- 多模态能力，覆盖文本、文件、图片、视频相关链路
+- 图片生成 / 图片编辑，支持 Base64 或 URL 输出
+- 视频生成与统一输出控制
+- 系统设置统一收口，集中管理代理、邮箱、刷新、输出格式等配置
+- 仪表盘 / 监控 / 日志 / 画廊，方便观察服务状态
+- 支持 SQLite / PostgreSQL
+- 可选接入 `refresh-worker`，但不再与主服务强耦合
 
 ---
 
-## 功能架构流程图
+## 模型能力概览
+
+| 模型 ID                  | 识图 | 原生联网 | 文件多模态 | 图片生成 | 视频生成 |
+| ------------------------ | ---- | -------- | ---------- | -------- | -------- |
+| `gemini-auto`            | ✅   | ✅       | ✅         | 可选     | -        |
+| `gemini-2.5-flash`       | ✅   | ✅       | ✅         | 可选     | -        |
+| `gemini-2.5-pro`         | ✅   | ✅       | ✅         | 可选     | -        |
+| `gemini-3-flash-preview` | ✅   | ✅       | ✅         | 可选     | -        |
+| `gemini-3.1-pro-preview` | ✅   | ✅       | ✅         | 可选     | -        |
+| `gemini-imagen`          | ✅   | ✅       | ✅         | ✅       | -        |
+| `gemini-veo`             | ✅   | ✅       | ✅         | -        | ✅       |
+
+> `gemini-imagen` 为专用图片生成模型，`gemini-veo` 为专用视频生成模型。
+
+---
+
+## 功能架构
 
 ```mermaid
 flowchart TB
-  User["管理员"] --> Frontend["管理后台前端"]
-  Client["OpenAI 兼容客户端"] --> Gateway["2API API 网关"]
+  Admin["管理员"] --> Frontend["管理后台前端"]
+  Client["OpenAI 兼容客户端"] --> Gateway["2API 网关"]
 
   subgraph Features["后台功能模块"]
     Dashboard["概览中心"]
@@ -76,7 +89,7 @@ flowchart TB
   Gallery --> AdminAPI
   Docs --> AdminAPI
 
-  Gateway --> Runtime["模型路由 / 对话 / 图片 / 视频接口"]
+  Gateway --> Runtime["模型 / 对话 / 图片 / 视频接口"]
   AdminAPI --> Domain["账号池 / 配置中心 / 调度 / 监控 / 日志"]
   Runtime --> Domain
 
@@ -85,18 +98,11 @@ flowchart TB
   Domain -. "可选接入" .-> Refresh["refresh-worker"]
 ```
 
-这个图对应当前主线设计：
-
-- **当前稳定发布线**：`main` / `beta` 当前都对齐 `v0.3.0`
-- **前台入口**分为两类：管理后台用户、OpenAI 兼容客户端
-- **后台页面功能**统一走后台管理接口
-- **2API 网关链路**负责对话、模型、图片、视频等 OpenAI 兼容能力
-- **核心域层**统一处理账号池、配置、调度、监控、日志
-- **refresh-worker** 是可选外部刷新执行器，不再和主服务强耦合
+当前主线：**前台只做 2API 与后台管理，刷新能力按可选 worker 外挂接入。**
 
 ---
 
-## 部署架构
+## 部署结构
 
 ```text
 docker-compose.yml
@@ -114,16 +120,8 @@ docker-compose.yml
    └─ 负责账号刷新
 ```
 
-启动方式：
-
-- 只跑 2API：`docker compose up -d`
-- 2API + refresh-worker：`docker compose --profile refresh up -d`
-
-说明：
-
-- `refresh-worker` 由独立的 `refresh-worker` 分支维护
-- 该分支通过 GitHub Actions 自动构建并发布 refresh-worker Docker 镜像
-- 主线 `docker-compose.yml` 通过 `REFRESH_WORKER_IMAGE` / `--profile refresh` 直接接入该镜像
+- 主线只跑 2API：`docker compose up -d`
+- 如需接入刷新 worker：`docker compose --profile refresh up -d`
 
 ---
 
@@ -131,34 +129,28 @@ docker-compose.yml
 
 ### 方式一：Docker Compose（推荐）
 
-支持 ARM64 / AMD64。
-
 ```bash
 git clone https://github.com/yukkcat/gemini-business2api.git
 cd gemini-business2api
 cp .env.example .env
-# 编辑 .env，至少设置 ADMIN_KEY
+# 至少设置 ADMIN_KEY
 
 docker compose up -d
 ```
 
-如果需要启用 refresh-worker：
+如需启用 refresh-worker：
 
 ```bash
 docker compose --profile refresh up -d
 ```
 
----
-
 ### 方式二：交互式安装脚本（Linux / macOS / WSL / Git Bash）
-
-主线现在统一使用 `deploy/install.sh`。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/main/deploy/install.sh | sudo bash
 ```
 
-如需锁定当前正式版 `v0.3.0`：
+锁定当前正式版：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/v0.3.0/deploy/install.sh | sudo bash
@@ -170,28 +162,7 @@ curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/v0.3.0/
 curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/main/deploy/install.sh | sudo bash -s -- --with-refresh
 ```
 
-如需锁定当前正式版并启用 refresh-worker：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/v0.3.0/deploy/install.sh | sudo bash -s -- --with-refresh
-```
-
-脚本支持两条路径：
-
-- Docker 部署
-- Python 本地启动（开发 / 调试）
-
-也可以在仓库内运行：
-
-```bash
-bash deploy/install.sh
-```
-
----
-
 ### 方式三：Python 本地开发
-
-适合开发、调试或本地改代码。
 
 ```bash
 git clone https://github.com/yukkcat/gemini-business2api.git
@@ -199,20 +170,13 @@ cd gemini-business2api
 bash deploy/install.sh --mode python
 ```
 
-脚本会引导你完成：
-
-- Python 3.11 / uv 检查
-- `.venv` 创建或复用
-- Python 依赖安装
-- 前端构建
-- `.env` 初始化
-- 可选直接启动 `python main.py`
+适合开发、调试和本地修改代码。
 
 ---
 
-### 访问地址
+## 访问地址
 
-- 管理面板：`http://localhost:7860/`
+- 管理后台：`http://localhost:7860/`
 - OpenAI 兼容接口：`http://localhost:7860/v1/chat/completions`
 - 健康检查：`http://localhost:7860/health`
 
@@ -230,10 +194,12 @@ ADMIN_KEY=your-admin-login-key
 # REFRESH_HEALTH_PORT=8080
 ```
 
-其中：
+说明：
 
-- `gemini-business2api` 主服务镜像由主线构建
-- `REFRESH_WORKER_IMAGE` 默认指向独立 `refresh-worker` 分支产出的镜像
+- 主服务镜像来自当前主线仓库
+- `REFRESH_WORKER_IMAGE` 指向独立 refresh-worker 分支产出的镜像
+- 未配置 `DATABASE_URL` 时默认使用本地 SQLite（推荐）
+- 配置 `DATABASE_URL` 后可切换到 PostgreSQL
 
 ### 数据目录
 
@@ -247,121 +213,36 @@ Compose 默认挂载：
 
 - SQLite 数据库
 - 运行时持久化数据
-- 本地生成文件与缓存数据
-
-如果不配置 `DATABASE_URL`，默认使用本地 SQLite。
-如果配置了 `DATABASE_URL`，则可以切到 PostgreSQL。
+- 本地生成文件与缓存
 
 ---
 
 ## API 兼容接口
 
-| 接口                     | 方法 | 说明                 |
-| ------------------------ | ---- | -------------------- |
-| `/v1/chat/completions`   | POST | 对话补全（支持流式） |
-| `/v1/models`             | GET  | 获取可用模型列表     |
-| `/v1/images/generations` | POST | 图片生成（文生图）   |
-| `/v1/images/edits`       | POST | 图片编辑（图生图）   |
-| `/health`                | GET  | 健康检查             |
-
-调用示例：
-
-```bash
-curl http://localhost:7860/v1/chat/completions \
-  -H "Authorization: Bearer your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gemini-2.5-flash",
-    "messages": [{"role": "user", "content": "你好"}],
-    "stream": true
-  }'
-```
-
-> `API_KEY` 在后台系统设置中配置；留空则表示公开访问。
+| 接口                     | 方法 | 说明     |
+| ------------------------ | ---- | -------- |
+| `/v1/models`             | GET  | 模型列表 |
+| `/v1/chat/completions`   | POST | 对话补全 |
+| `/v1/images/generations` | POST | 图片生成 |
+| `/v1/images/edits`       | POST | 图片编辑 |
+| `/health`                | GET  | 健康检查 |
 
 ---
 
-## 常用运维命令
+## 社区交流
 
-```bash
-# 查看服务状态
-docker compose ps
+点击链接加入群聊【Business2API 交流群】：
 
-# 查看主服务日志
-docker compose logs -f gemini-api
-
-# 启动主服务
-docker compose up -d
-
-# 启动主服务 + refresh-worker
-docker compose --profile refresh up -d
-
-# 停止 refresh-worker
-docker compose --profile refresh stop refresh-worker
-
-# 更新镜像
-docker compose pull && docker compose up -d
-
-# 停止全部服务
-docker compose down
-```
+- [https://qm.qq.com/q/yegwCqJisS](https://qm.qq.com/q/yegwCqJisS)
 
 ---
 
-## 功能展示
+## 许可证
 
-### 管理系统
-
-<table>
-  <tr>
-    <td><img src="docs/img/1.png" alt="管理系统 1" /></td>
-    <td><img src="docs/img/2.png" alt="管理系统 2" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/img/3.png" alt="管理系统 3" /></td>
-    <td><img src="docs/img/4.png" alt="管理系统 4" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/img/5.png" alt="管理系统 5" /></td>
-    <td><img src="docs/img/6.png" alt="管理系统 6" /></td>
-  </tr>
-</table>
-
-### 图片效果
-
-<table>
-  <tr>
-    <td><img src="docs/img/img_1.png" alt="图片效果 1" /></td>
-    <td><img src="docs/img/img_2.png" alt="图片效果 2" /></td>
-  </tr>
-  <tr>
-    <td><img src="docs/img/img_3.png" alt="图片效果 3" /></td>
-    <td><img src="docs/img/img_4.png" alt="图片效果 4" /></td>
-  </tr>
-</table>
-
----
-
+本项目采用 **Cooperative Non-Commercial License (CNC-1.0)**。
 
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=yukkcat/gemini-business2api&type=date&legend=top-left)](https://www.star-history.com/#yukkcat/gemini-business2api&type=date&legend=top-left)
 
-如果这个项目对你有帮助，欢迎点一个 ⭐ Star。
-
----
-
-## 开源协议与使用说明
-
-本项目采用 **Cooperative Non-Commercial License (CNC-1.0)**。
-
-使用边界：
-
-- 允许：个人学习、技术研究、非商业交流
-- 禁止：商业用途、盈利性服务、批量滥用、违反 Google / Microsoft 服务条款的使用方式
-
-相关文件：
-
-- 协议文本：[`LICENSE`](LICENSE)
-- 中文免责声明：[`docs/DISCLAIMER.md`](docs/DISCLAIMER.md)
-- 英文免责声明：[`docs/DISCLAIMER_EN.md`](docs/DISCLAIMER_EN.md)
+**如果这个项目对你有帮助，请给个 ⭐ Star！**

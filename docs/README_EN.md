@@ -7,51 +7,64 @@
   <a href="../README.md">简体中文</a> | <strong>English</strong>
 </p>
 <p align="center"><img src="https://img.shields.io/badge/License-CNC--1.0-red.svg" /> <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" /> <img src="https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white" /> <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" /> <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" /> <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" /></p>
+<p align="center"><strong>Current stable release: v0.3.0</strong> | <a href="https://github.com/yukkcat/gemini-business2api/releases/tag/v0.3.0">Release Notes</a> | <a href="https://github.com/yukkcat/gemini-business2api/releases">All Releases</a></p>
 
-<p align="center">Focused on the 2API main service, admin panel, and optional refresh-worker.</p>
-
-<p align="center">Current stable release: <strong>v0.3.0</strong> | <a href="https://github.com/yukkcat/gemini-business2api/releases/tag/v0.3.0">Release Notes</a> | <a href="https://github.com/yukkcat/gemini-business2api/releases">All Releases</a></p>
+> [!IMPORTANT]
+> Since **v0.3.0**, the repository mainline has been fully narrowed into a **2API-focused mainline**:
+> only **the 2API main service**, **the admin panel**, and **the optional refresh-worker** remain.
+>
+> The legacy registration tool, registration flow, built-in refresh executor, and browser-display-dependent old paths have been removed or moved out. If you need refresh capability, attach the standalone `refresh-worker` branch / image on demand.
 
 ---
 
 ## Project Positioning
 
-Gemini Business2API turns [Gemini Business](https://business.google.com) into an **OpenAI-compatible API gateway** with a built-in admin panel for managing accounts, settings, image / video features, and runtime status.
+Gemini Business2API turns [Gemini Business](https://business.google.com) into an **OpenAI-compatible API gateway** with a built-in admin panel for managing account pools, system settings, image / video capability, runtime monitoring, and logs.
 
-The current mainline focuses on only three things:
-
-1. **2API main service**
-2. **Admin panel**
-3. **Optional refresh-worker**
-
-Registration tools, experimental refresh flows, and older script-first deployment paths are no longer the default mainline workflow.
+The current mainline has a very clear goal: provide a stable **2API main service** and keep historical registration, refresh, and experimental flows out of the primary repository path.
 
 ---
 
 ## Core Capabilities
 
-- ✅ OpenAI-compatible API for common OpenAI clients and middleware
-- ✅ Multi-account scheduling with rotation and availability switching
-- ✅ Account management UI with import / export / edit / batch actions / filtering
-- ✅ Multimodal support for text, files, images, and video-related features
-- ✅ Image generation and image editing with Base64 or URL output
-- ✅ Video generation with unified output control
-- ✅ Centralized system settings for proxy, mail, refresh, and output behavior
-- ✅ Dashboard / monitoring / logs for service visibility
-- ✅ SQLite / PostgreSQL support for local persistence or shared deployments
-- ✅ Optional refresh-worker enabled independently via Docker Compose profile
+- OpenAI-compatible endpoints for common OpenAI SDKs and middleware
+- Multi-account scheduling with rotation, availability switching, and batch management
+- Admin panel for import / export / edit / batch actions / status filtering
+- Multimodal support across text, files, images, and video-related flows
+- Image generation / image editing with Base64 or URL output
+- Video generation with unified output control
+- Centralized settings for proxy, mail, refresh, and output behavior
+- Dashboard / monitoring / logs / gallery for runtime visibility
+- SQLite / PostgreSQL support
+- Optional `refresh-worker` integration without tight coupling to the main service
 
 ---
 
-## Functional Architecture Flow
+## Model Support Overview
+
+| Model ID                 | Vision | Native Web | File Multimodal | Image Gen | Video Gen |
+| ------------------------ | ------ | ---------- | --------------- | --------- | --------- |
+| `gemini-auto`            | ✅     | ✅         | ✅              | Optional  | -         |
+| `gemini-2.5-flash`       | ✅     | ✅         | ✅              | Optional  | -         |
+| `gemini-2.5-pro`         | ✅     | ✅         | ✅              | Optional  | -         |
+| `gemini-3-flash-preview` | ✅     | ✅         | ✅              | Optional  | -         |
+| `gemini-3.1-pro-preview` | ✅     | ✅         | ✅              | Optional  | -         |
+| `gemini-imagen`          | ✅     | ✅         | ✅              | ✅        | -         |
+| `gemini-veo`             | ✅     | ✅         | ✅              | -         | ✅        |
+
+> `gemini-imagen` is the dedicated image generation model, and `gemini-veo` is the dedicated video generation model.
+
+---
+
+## Functional Architecture
 
 ```mermaid
 flowchart TB
-  User["Admin user"] --> Frontend["Admin panel frontend"]
-  Client["OpenAI-compatible client"] --> Gateway["2API API gateway"]
+  Admin["Admin user"] --> Frontend["Admin panel frontend"]
+  Client["OpenAI-compatible client"] --> Gateway["2API gateway"]
 
   subgraph Features["Admin feature modules"]
-    Dashboard["Overview center"]
+    Dashboard["Overview"]
     Accounts["Account management"]
     Settings["System settings"]
     Monitor["Monitoring"]
@@ -68,7 +81,7 @@ flowchart TB
   Frontend --> Gallery
   Frontend --> Docs
 
-  Dashboard --> AdminAPI["Admin management APIs"]
+  Dashboard --> AdminAPI["Admin APIs"]
   Accounts --> AdminAPI
   Settings --> AdminAPI
   Monitor --> AdminAPI
@@ -76,7 +89,7 @@ flowchart TB
   Gallery --> AdminAPI
   Docs --> AdminAPI
 
-  Gateway --> Runtime["Model routing / chat / image / video APIs"]
+  Gateway --> Runtime["Model / chat / image / video APIs"]
   AdminAPI --> Domain["Account pool / config / scheduling / monitoring / logs"]
   Runtime --> Domain
 
@@ -85,14 +98,7 @@ flowchart TB
   Domain -. "optional integration" .-> Refresh["refresh-worker"]
 ```
 
-This reflects the current mainline design:
-
-- **Current stable release line**: `main` and `beta` are both aligned to `v0.3.0`
-- **Two entry points**: admin panel users and OpenAI-compatible clients
-- **Admin pages** go through a unified management API layer
-- **The 2API gateway path** handles chat, model, image, and video compatibility
-- **The core domain layer** centralizes account pool, configuration, scheduling, monitoring, and logs
-- **refresh-worker** is an optional external refresh executor and is no longer tightly coupled to the main service
+Current mainline: **the frontend focuses on 2API + admin management, while refresh is attached as an optional worker.**
 
 ---
 
@@ -101,7 +107,7 @@ This reflects the current mainline design:
 ```text
 docker-compose.yml
 ├─ gemini-api
-│  ├─ runs the main 2API service
+│  ├─ runs the 2API main service
 │  ├─ runs the admin panel
 │  ├─ exposes 7860
 │  └─ mounts ./data:/app/data
@@ -109,21 +115,13 @@ docker-compose.yml
 └─ refresh-worker (optional)
    ├─ disabled by default
    ├─ enabled with profile refresh
-   ├─ does not expose public business APIs
+   ├─ does not expose business APIs
    ├─ reads the same ./data volume
    └─ handles account refresh work
 ```
 
-Startup:
-
-- 2API only: `docker compose up -d`
-- 2API + refresh-worker: `docker compose --profile refresh up -d`
-
-Notes:
-
-- `refresh-worker` is maintained in the separate `refresh-worker` branch
-- that branch has its own GitHub Actions workflow to build and publish the refresh-worker Docker image
-- the mainline `docker-compose.yml` connects to that image through `REFRESH_WORKER_IMAGE` / `--profile refresh`
+- Mainline 2API only: `docker compose up -d`
+- Attach refresh worker when needed: `docker compose --profile refresh up -d`
 
 ---
 
@@ -131,67 +129,40 @@ Notes:
 
 ### Option 1: Docker Compose (Recommended)
 
-Supports ARM64 / AMD64.
-
 ```bash
 git clone https://github.com/yukkcat/gemini-business2api.git
 cd gemini-business2api
 cp .env.example .env
-# Edit .env and set at least ADMIN_KEY
+# Set at least ADMIN_KEY
 
 docker compose up -d
 ```
 
-To enable the refresh-worker:
+Enable `refresh-worker` if needed:
 
 ```bash
 docker compose --profile refresh up -d
 ```
 
----
-
 ### Option 2: Interactive Installer (Linux / macOS / WSL / Git Bash)
-
-The mainline now uses `deploy/install.sh`.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/main/deploy/install.sh | sudo bash
 ```
 
-To pin the current stable release `v0.3.0`:
+Pin the current stable release:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/v0.3.0/deploy/install.sh | sudo bash
 ```
 
-Enable refresh-worker:
+Enable `refresh-worker`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/main/deploy/install.sh | sudo bash -s -- --with-refresh
 ```
 
-To pin the current stable release and enable refresh-worker:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/yukkcat/gemini-business2api/v0.3.0/deploy/install.sh | sudo bash -s -- --with-refresh
-```
-
-The installer supports two paths:
-
-- Docker deployment
-- Local Python startup for development / debugging
-
-You can also run it inside the repository:
-
-```bash
-bash deploy/install.sh
-```
-
----
-
 ### Option 3: Local Python Development
-
-Recommended for development and local debugging.
 
 ```bash
 git clone https://github.com/yukkcat/gemini-business2api.git
@@ -199,18 +170,11 @@ cd gemini-business2api
 bash deploy/install.sh --mode python
 ```
 
-The script guides you through:
-
-- Python 3.11 / uv check
-- `.venv` creation or reuse
-- Python dependency installation
-- frontend build
-- `.env` initialization
-- optional immediate `python main.py` startup
+Best for development, debugging, and local code iteration.
 
 ---
 
-### Access URLs
+## Access URLs
 
 - Admin panel: `http://localhost:7860/`
 - OpenAI-compatible endpoint: `http://localhost:7860/v1/chat/completions`
@@ -230,10 +194,12 @@ ADMIN_KEY=your-admin-login-key
 # REFRESH_HEALTH_PORT=8080
 ```
 
-Where:
+Notes:
 
-- the `gemini-business2api` main image is built from the mainline branch
-- `REFRESH_WORKER_IMAGE` points by default to the image produced from the separate `refresh-worker` branch
+- the main service image comes from the mainline repository
+- `REFRESH_WORKER_IMAGE` points to the image built from the standalone refresh-worker branch
+- local SQLite is used by default when `DATABASE_URL` is not set
+- PostgreSQL can be enabled by setting `DATABASE_URL`
 
 ### Data directory
 
@@ -243,132 +209,40 @@ Compose mounts:
 ./data -> /app/data
 ```
 
-This stores:
+This directory stores:
 
-- SQLite database
-- persistent runtime data
-- locally generated files and cache data
-
-If `DATABASE_URL` is not set, the project uses local SQLite by default.
-If `DATABASE_URL` is set, you can switch to PostgreSQL.
+- the SQLite database
+- runtime persistence data
+- locally generated files and caches
 
 ---
 
-## API Endpoints
+## API Compatibility Endpoints
 
 | Endpoint | Method | Description |
-| --- | --- | --- |
-| `/v1/chat/completions` | POST | Chat completions with streaming support |
-| `/v1/models` | GET | List available models |
-| `/v1/images/generations` | POST | Text-to-image generation |
-| `/v1/images/edits` | POST | Image editing / image-to-image |
-| `/health` | GET | Health check |
-
-Example:
-
-```bash
-curl http://localhost:7860/v1/chat/completions \
-  -H "Authorization: Bearer your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gemini-2.5-flash",
-    "messages": [{"role": "user", "content": "Hello"}],
-    "stream": true
-  }'
-```
-
-> `API_KEY` is configured in the admin panel system settings. Leave it empty for public access.
-
----
-
-## Common Operations
-
-```bash
-# Service status
-docker compose ps
-
-# Main service logs
-docker compose logs -f gemini-api
-
-# Start main service
-docker compose up -d
-
-# Start main service + refresh-worker
-docker compose --profile refresh up -d
-
-# Stop refresh-worker
-docker compose --profile refresh stop refresh-worker
-
-# Update images
-docker compose pull && docker compose up -d
-
-# Stop everything
-docker compose down
-```
-
----
-
-## Screenshots
-
-### Admin System
-
-<table>
-  <tr>
-    <td><img src="img/1.png" alt="Admin System 1" /></td>
-    <td><img src="img/2.png" alt="Admin System 2" /></td>
-  </tr>
-  <tr>
-    <td><img src="img/3.png" alt="Admin System 3" /></td>
-    <td><img src="img/4.png" alt="Admin System 4" /></td>
-  </tr>
-  <tr>
-    <td><img src="img/5.png" alt="Admin System 5" /></td>
-    <td><img src="img/6.png" alt="Admin System 6" /></td>
-  </tr>
-</table>
-
-### Image Effects
-
-<table>
-  <tr>
-    <td><img src="img/img_1.png" alt="Image Effects 1" /></td>
-    <td><img src="img/img_2.png" alt="Image Effects 2" /></td>
-  </tr>
-  <tr>
-    <td><img src="img/img_3.png" alt="Image Effects 3" /></td>
-    <td><img src="img/img_4.png" alt="Image Effects 4" /></td>
-  </tr>
-</table>
+| -------- | ------ | ----------- |
+| `/v1/models` | GET  | model list |
+| `/v1/chat/completions` | POST | chat completions |
+| `/v1/images/generations` | POST | image generation |
+| `/v1/images/edits` | POST | image editing |
+| `/health` | GET  | health check |
 
 ---
 
 ## Community
 
-Join the QQ group:
+Join the Business2API group:
 
 - [https://qm.qq.com/q/yegwCqJisS](https://qm.qq.com/q/yegwCqJisS)
 
 ---
 
+## License
+
+This project uses the **Cooperative Non-Commercial License (CNC-1.0)**.
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=yukkcat/gemini-business2api&type=date&legend=top-left)](https://www.star-history.com/#yukkcat/gemini-business2api&type=date&legend=top-left)
 
-If this project helps you, please give it a ⭐ Star.
-
----
-
-## License & Usage Notes
-
-This project uses the **Cooperative Non-Commercial License (CNC-1.0)**.
-
-Usage boundaries:
-
-- Allowed: personal learning, technical research, non-commercial sharing
-- Prohibited: commercial usage, paid services, bulk abuse, or usage that violates Google / Microsoft terms of service
-
-Related files:
-
-- License text: [`../LICENSE`](../LICENSE)
-- Chinese disclaimer: [`DISCLAIMER.md`](DISCLAIMER.md)
-- English disclaimer: [`DISCLAIMER_EN.md`](DISCLAIMER_EN.md)
+**If this project helps you, please give it a ⭐ Star!**
